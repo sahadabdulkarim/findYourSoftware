@@ -32,5 +32,5 @@ To run this project locally, please ensure you have **Git** and **Docker Desktop
 Open your terminal and clone this repository to your local machine.
 
 ```bash
-git clone [https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git)
+git clone https://github.com/sahadabdulkarim/findYourSoftware.git
 cd software-finder-project
