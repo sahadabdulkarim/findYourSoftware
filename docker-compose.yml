@@ -1,0 +1,32 @@
+services:
+  web:
+    build: .  # Build the image from the Dockerfile in the current directory
+    ports:
+      - "5001:5001" # Map port 5001 on the host to port 5001 in the container
+    volumes:
+      - .:/app  # Mount the current directory into the container's /app folder
+                # Allows live code reloading during development.
+    environment:
+      # Pass database credentials from our .env file to the container
+      - DB_HOST=db # The hostname for the database is now the service name 'db'
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql # Persist database data even if the container is removed
+
+volumes:
+  mysql_data:
