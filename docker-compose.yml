@@ -15,6 +15,28 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
     depends_on:
       - db
+  
+
+  admin_api:
+    build: .
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "echo 'Waiting for database...' &&
+             sleep 5 &&
+             echo 'Running migrations and starting server...' &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+    environment:
+      - DB_HOST=db
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      - db
 
   db:
     image: mysql:8.0
