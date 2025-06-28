@@ -1,21 +1,21 @@
 services:
   web:
-    build: .  # Build the image from the Dockerfile in the current directory
+    build: .
     ports:
       - "5001:5001" # Map port 5001 on the host to port 5001 in the container
     volumes:
-      - .:/app  # Mount the current directory into the container's /app folder
-                # Allows live code reloading during development.
+      - .:/app
     environment:
-      # Pass database credentials from our .env file to the container
-      - DB_HOST=db # The hostname for the database is now the service name 'db'
+      - DB_HOST=db
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
       - db
-  
+      - redis
 
   admin_api:
     build: .
@@ -37,6 +37,28 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
     depends_on:
       - db
+
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"
+
+  worker:
+    build: .
+    command: celery -A tasks.celery_app worker --loglevel=info
+    volumes:
+      - .:/app
+    environment:
+      - DB_HOST=db
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
 
   db:
     image: mysql:8.0

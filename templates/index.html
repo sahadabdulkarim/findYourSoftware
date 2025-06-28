@@ -97,13 +97,55 @@
         const resultArea = document.getElementById('result-area');
         const submitButton = document.getElementById('submit-button');
 
+        // Function to poll for task status
+        const pollTaskStatus = (taskId) => {
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch(`http://127.0.0.1:5001/tasks/${taskId}`);
+                    const data = await response.json();
+
+                    if (data.state === 'SUCCESS') {
+                        clearInterval(interval); // Stop polling
+                        // Display the final result
+                        const result = data.result;
+                        resultArea.innerHTML = `
+                            <h3 class="font-bold text-lg text-gray-800">Our Recommendation</h3>
+                            <p class="mt-2 text-gray-600">${result.message}</p>
+                        `;
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Find Software';
+                    } else if (data.state === 'FAILURE') {
+                        clearInterval(interval); // Stop polling on failure
+                        resultArea.innerHTML = `
+                            <h3 class="font-bold text-lg text-red-600">An Error Occurred</h3>
+                            <p class="mt-2 text-gray-600">The recommendation task failed. Please try again.</p>
+                        `;
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Find Software';
+                    }
+                    // If state is PENDING, do nothing and let the interval run again
+                } catch (error) {
+                    clearInterval(interval);
+                    console.error('Error polling task status:', error);
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Find Software';
+                }
+            }, 2000); // Poll every 2 seconds
+        };
+
+        // Listen for the form to be submitted
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
 
+            // Show a loading state to the user
             submitButton.disabled = true;
             submitButton.textContent = 'Analyzing...';
-            resultArea.style.display = 'none';
-
+            resultArea.style.display = 'block';
+            resultArea.innerHTML = `
+                <h3 class="font-bold text-lg text-gray-800">Analyzing your request...</h3>
+                <p class="mt-2 text-gray-600">This may take a few seconds.</p>
+            `;
+            
             const formData = {
                 industry: document.getElementById('industry').value,
                 team_size: document.getElementById('team_size').value,
@@ -112,34 +154,23 @@
             };
 
             try {
+                // Start the background task
                 const response = await fetch('http://127.0.0.1:5001/recommend', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData),
                 });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-
                 const data = await response.json();
-
-                resultArea.innerHTML = `
-                    <h3 class="font-bold text-lg text-gray-800">Our Recommendation</h3>
-                    <p class="mt-2 text-gray-600">${data.message}</p>
-                `;
-                resultArea.style.display = 'block';
+                
+                // Start polling for the result
+                pollTaskStatus(data.task_id);
 
             } catch (error) {
-                console.error('Error fetching recommendation:', error);
+                console.error('Error starting task:', error);
                 resultArea.innerHTML = `
                     <h3 class="font-bold text-lg text-red-600">An Error Occurred</h3>
-                    <p class="mt-2 text-gray-600">Could not fetch a recommendation. Please make sure the backend server is running and try again.</p>
+                    <p class="mt-2 text-gray-600">Could not start the recommendation task. Please check the server.</p>
                 `;
-                resultArea.style.display = 'block';
-            } finally {
                 submitButton.disabled = false;
                 submitButton.textContent = 'Find Software';
             }
